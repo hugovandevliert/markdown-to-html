@@ -56,19 +56,34 @@ class MarkdownParser:
                     "Error while parsing. Expected '{}' but got '{}'".format(char, peek()))
             return consume_one()
 
+        def next_is(next):
+            for i, c in enumerate(next):
+                if peek(i) != c:
+                    return False
+            return True
+
         def peek(offset=0):
-            return line[index + offset]
+            if index + offset < len(line):
+                return line[index + offset]
+            return 0
 
         html = ''
-        heading = 0
         index = 0
+
+        heading = 0
+        if peek() == '#':
+            while peek() == '#':
+                consume_specific('#')
+                heading += 1
+            consume_specific(' ')
+            html += '<h{}>'.format(heading)
+
         while index < len(line):
-            if index == 0 and peek() == '#':
-                while peek() == '#':
-                    consume_specific('#')
-                    heading += 1
+            if next_is('  '):
                 consume_specific(' ')
-                html += '<h{}>'.format(heading)
+                consume_specific(' ')
+                html += '<br>'
+                continue
 
             html += consume_one()
 
