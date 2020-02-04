@@ -79,6 +79,12 @@ class MarkdownParser:
                         id += peek(id_index).lower()
                     id_index += 1
                 html += '<h{} id="{}">'.format(heading, id)
+            elif peek() == '-' and peek(1) == '-' and peek(2) == '-':
+                consume_specific('-')
+                consume_specific('-')
+                consume_specific('-')
+                html += '<hr />'
+                continue
             elif not in_para:
                 html += '<p>'
                 in_para = True
@@ -87,7 +93,7 @@ class MarkdownParser:
                 if peek() == ' ' and peek(1) == ' ':
                     consume_specific(' ')
                     consume_specific(' ')
-                    html += '<br>'
+                    html += '<br />'
                     continue
 
                 if peek() == '*':
