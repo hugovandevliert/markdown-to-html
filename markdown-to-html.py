@@ -70,7 +70,15 @@ class MarkdownParser:
                     consume_specific('#')
                     heading += 1
                 consume_specific(' ')
-                html += '<h{}>'.format(heading)
+                id = ''
+                id_index = 0
+                while peek(id_index) != '\n':
+                    if peek(id_index) == ' ':
+                        id += '-'
+                    else:
+                        id += peek(id_index).lower()
+                    id_index += 1
+                html += '<h{} id="{}">'.format(heading, id)
             elif not in_para:
                 html += '<p>'
                 in_para = True
