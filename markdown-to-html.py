@@ -46,19 +46,15 @@ class MarkdownParser:
                     "Error while parsing. Expected '{}' but got '{}'".format(char, peek()))
             return consume_one()
 
-        def next_is(next):
-            for i, c in enumerate(next):
-                if peek(i) != c:
-                    return False
-            return True
-
         def peek(offset=0):
             if index + offset < len(input):
                 return input[index + offset]
-            return 0
+            return None
 
         html = ''
         in_para = False
+        in_bold = False
+        in_italic = False
         index = 0
         while index < len(input):
             if peek() == '\n':
@@ -79,10 +75,22 @@ class MarkdownParser:
                 in_para = True
 
             while peek() != '\n':
-                if next_is('  '):
+                if peek() == ' ' and peek(1) == ' ':
                     consume_specific(' ')
                     consume_specific(' ')
                     html += '<br>'
+                    continue
+
+                if peek() == '*':
+                    if peek(1) == '*':
+                        consume_specific('*')
+                        consume_specific('*')
+                        in_bold = not in_bold
+                        html += '<strong>' if in_bold else '</strong>'
+                    else:
+                        consume_specific('*')
+                        in_italic = not in_italic
+                        html += '<em>' if in_italic else '</em>'
                     continue
 
                 html += consume_one()
