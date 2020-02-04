@@ -6,12 +6,12 @@ import sys
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input-file",
-                        help="input markdown file",
+    parser.add_argument('-i', '--input-file',
+                        help='input markdown file',
                         required=True)
-    parser.add_argument("-o", "--output-file",
-                        help="output html file (defaults to output.html)",
-                        default="output.html")
+    parser.add_argument('-o', '--output-file',
+                        help='output html file (defaults to output.html)',
+                        default='output.html')
     args = parser.parse_args()
 
     inputfile = args.input_file
@@ -21,32 +21,22 @@ def main():
         with open(inputfile, 'r') as file:
             markdown = file.read()
     except:
-        sys.exit("Could not read file: " + inputfile)
+        sys.exit('Could not read file: ' + inputfile)
 
-    html = MarkdownParser(markdown).parse()
+    html = MarkdownParser().parse(markdown)
 
     try:
         with open(outputfile, 'w') as file:
             markdown = file.write(html)
     except:
-        sys.exit("Could write to file: " + inputfile)
+        sys.exit('Could write to file: ' + inputfile)
 
 
 class MarkdownParser:
-    def __init__(self, input):
-        self.input = input
-        self.html = ''
-
-    def parse(self):
-        for line in self.input.split("\n"):
-            self.html += self.parse_line(line)
-            self.html += "\n"
-        return self.html
-
-    def parse_line(self, line):
+    def parse(self, input):
         def consume_one():
             nonlocal index
-            ch = line[index]
+            ch = input[index]
             index += 1
             return ch
 
@@ -63,35 +53,50 @@ class MarkdownParser:
             return True
 
         def peek(offset=0):
-            if index + offset < len(line):
-                return line[index + offset]
+            if index + offset < len(input):
+                return input[index + offset]
             return 0
 
         html = ''
+        in_para = False
         index = 0
-
-        heading = 0
-        if peek() == '#':
-            while peek() == '#':
-                consume_specific('#')
-                heading += 1
-            consume_specific(' ')
-            html += '<h{}>'.format(heading)
-
-        while index < len(line):
-            if next_is('  '):
-                consume_specific(' ')
-                consume_specific(' ')
-                html += '<br>'
+        while index < len(input):
+            if peek() == '\n':
+                html += consume_specific('\n')
+            if peek() == '\n':
+                html += consume_specific('\n')
                 continue
 
-            html += consume_one()
+            heading = 0
+            if peek() == '#':
+                while peek() == '#':
+                    consume_specific('#')
+                    heading += 1
+                consume_specific(' ')
+                html += '<h{}>'.format(heading)
+            elif not in_para:
+                html += '<p>'
+                in_para = True
 
-        if heading > 0:
-            html += '</h{}>'.format(heading)
+            while peek() != '\n':
+                if next_is('  '):
+                    consume_specific(' ')
+                    consume_specific(' ')
+                    html += '<br>'
+                    continue
+
+                html += consume_one()
+
+            if heading > 0:
+                html += '</h{}>'.format(heading)
+            elif peek(1) == '\n':
+                html += '</p>'
+                in_para = False
+
+            html += consume_specific('\n')
 
         return html
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
