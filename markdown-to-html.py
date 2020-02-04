@@ -56,6 +56,7 @@ class MarkdownParser:
         in_bold = False
         in_italic = False
         in_code = False
+        in_strike = False
         index = 0
         while index < len(input):
             if peek() == '\n':
@@ -112,6 +113,12 @@ class MarkdownParser:
                     consume_specific('`')
                     in_code = not in_code
                     html += '<code>' if in_code else '</code>'
+                    continue
+
+                if peek() == '~':
+                    consume_specific('~')
+                    in_strike = not in_strike
+                    html += '<s>' if in_strike else '</s>'
                     continue
 
                 html += consume_one()
