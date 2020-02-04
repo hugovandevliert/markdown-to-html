@@ -112,11 +112,14 @@ class MarkdownParser:
 
             if heading > 0:
                 html += '</h{}>'.format(heading)
+                html += consume_specific('\n')
             elif peek(1) == '\n':
                 html += '</p>'
                 in_para = False
-
-            html += consume_specific('\n')
+                html += consume_specific('\n')
+            else:
+                html += consume_specific('\n')
+                html += '\t'
 
         return html
 
