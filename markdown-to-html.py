@@ -46,6 +46,12 @@ class MarkdownParser:
                     "Error while parsing. Expected '{}' but got '{}'".format(char, peek()))
             return consume_one()
 
+        def next_is(next):
+            for i, c in enumerate(next):
+                if peek(i) != c:
+                    return False
+            return True
+
         def peek(offset=0):
             if index + offset < len(input):
                 return input[index + offset]
@@ -57,6 +63,9 @@ class MarkdownParser:
         in_italic = False
         in_code = False
         in_strike = False
+        in_olist = False
+        in_ulist = False
+        in_list = False
         index = 0
         while index < len(input):
             if peek() == '\n':
@@ -64,6 +73,8 @@ class MarkdownParser:
             if peek() == '\n':
                 html += consume_specific('\n')
                 continue
+            if not peek():
+                break
 
             heading = 0
             if peek() == '#':
@@ -86,9 +97,30 @@ class MarkdownParser:
                 consume_specific('-')
                 html += '<hr />'
                 continue
+            elif peek().isdigit() and peek(1) == '.' and peek(2) == ' ':
+                consume_one()
+                consume_specific('.')
+                consume_specific(' ')
+                if not in_olist:
+                    html += '<ol>'
+                    in_olist = True
+                    html += '\n'
+                in_list = True
+                html += '\t'
+                html += '<li>'
+            elif peek() == '-':
+                consume_specific('-')
+                consume_specific(' ')
+                if not in_ulist:
+                    html += '<ul>'
+                    in_ulist = True
+                    html += '\n'
+                in_list = True
+                html += '\t'
+                html += '<li>'
             elif not in_para:
-                html += '<p>'
                 in_para = True
+                html += '<p>'
 
             while peek() != '\n':
                 if peek() == ' ' and peek(1) == ' ':
@@ -126,6 +158,20 @@ class MarkdownParser:
             if heading > 0:
                 html += '</h{}>'.format(heading)
                 html += consume_specific('\n')
+            elif in_list:
+                html += '</li>'
+                html += consume_specific('\n')
+                in_list = False
+                if in_olist:
+                    if not (peek() and peek().isdigit() and peek(1) == '.' and peek(2) == ' ') and not (peek() == '\n' and peek(1) and peek(1).isdigit() and peek(2) == '.' and peek(3) == ' '):
+                        html += '</ol>'
+                        html += '\n'
+                        in_olist = False
+                if in_ulist:
+                    if not (peek() == '-' and peek(1) == ' '):
+                        html += '</ul>'
+                        html += '\n'
+                        in_ulist = False
             elif peek(1) == '\n':
                 html += '</p>'
                 in_para = False
