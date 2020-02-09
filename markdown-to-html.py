@@ -32,6 +32,84 @@ def main():
         sys.exit('Could write to file: ' + inputfile)
 
 
+class HtmlElement:
+    tags = {
+        'root': None,
+        'text': '',
+        'h1': '<h1{}>{}</h1>',
+        'h2': '<h2{}>{}</h2>',
+        'h3': '<h3{}>{}</h3>',
+        'p': '<p{}>{}</p>',
+        'strong': '<strong{}>{}</strong>',
+        'code': '<code{}>{}</code>',
+        'strikethrough': '<s{}>{}</s>',
+        'em': '<em{}>{}</em>',
+        'br': '<br{} />',
+        'hr': '<hr{} />',
+        'ul': '<ul{}>\n{}\n</ul>',
+        'ol': '<ol{}>\n{}\n</ol>',
+        'li': '<li{}>{}</li>'
+    }
+
+    def __init__(self, tag):
+        self.tag = HtmlElement.tags[tag]
+        self.attributes = []
+        self.children = []
+        self.parent = None
+        self.text = ''
+
+    def add_child(self, tag):
+        child = HtmlElement(tag)
+        child.parent = self
+        self.children.append(child)
+        return child
+
+    def is_tag(self, tag):
+        return self.tag == self.tags[tag]
+
+    def in_tag(self, tag):
+        element = self.parent
+        while element:
+            if element.tag == self.tags[tag]:
+                return True
+            element = element.parent
+        return False
+
+    def find_tag_in_parents(self, tag):
+        element = self.parent
+        while element:
+            if element.tag == self.tags[tag]:
+                return element
+            element = element.parent
+        return None
+
+    def __str__(self):
+        if self.tag == self.tags['root']:
+            content = ''
+            for child in self.children:
+                content += str(child)
+            return content
+        if self.tag == self.tags['text']:
+            return self.text
+        attributes = ''
+        for attribute in self.attributes:
+            attributes += ' '
+            attributes += str(attribute)
+        children = ''
+        for child in self.children:
+            children += str(child)
+        return self.tag.format(attributes, children)
+
+
+class HtmlAttribute:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def __str__(self):
+        return '{}="{}"'.format(self.name, self.value)
+
+
 class MarkdownParser:
     def parse(self, input):
         def consume_one():
@@ -46,39 +124,35 @@ class MarkdownParser:
                     "Error while parsing. Expected '{}' but got '{}'".format(char, peek()))
             return consume_one()
 
-        def next_is(next):
-            for i, c in enumerate(next):
-                if peek(i) != c:
-                    return False
-            return True
-
         def peek(offset=0):
             if index + offset < len(input):
                 return input[index + offset]
             return None
 
-        html = ''
-        in_para = False
-        in_bold = False
-        in_italic = False
-        in_code = False
-        in_strike = False
-        in_olist = False
-        in_ulist = False
-        in_list = False
+        def open_or_close_tag(tag):
+            nonlocal child_element
+            if not child_element.in_tag(tag):
+                strong_element = child_element.parent.add_child(tag)
+                child_element = strong_element.add_child('text')
+            else:
+                child_element = child_element.find_tag_in_parents(
+                    tag).parent.add_child('text')
+
+        root_element = HtmlElement('root')
         index = 0
         while index < len(input):
+            newpara = False
             if peek() == '\n':
-                html += consume_specific('\n')
-            if peek() == '\n':
-                html += consume_specific('\n')
-                continue
-            if not peek():
-                break
+                consume_specific('\n')
+                newpara = True
+                element = root_element.add_child('text')
+                element.text = '\n'
+                if peek() == '\n':
+                    consume_specific('\n')
 
             heading = 0
             if peek() == '#':
-                while peek() == '#':
+                while peek() == '#' and heading <= 3:
                     consume_specific('#')
                     heading += 1
                 consume_specific(' ')
@@ -90,97 +164,80 @@ class MarkdownParser:
                     else:
                         id += peek(id_index).lower()
                     id_index += 1
-                html += '<h{} id="{}">'.format(heading, id)
+                element = root_element.add_child('h{}'.format(heading))
+                element.attributes.append(HtmlAttribute('id', id))
             elif peek() == '-' and peek(1) == '-' and peek(2) == '-':
                 consume_specific('-')
                 consume_specific('-')
                 consume_specific('-')
-                html += '<hr />'
+                element = root_element.add_child('hr')
                 continue
             elif peek().isdigit() and peek(1) == '.' and peek(2) == ' ':
                 consume_one()
                 consume_specific('.')
                 consume_specific(' ')
-                if not in_olist:
-                    html += '<ol>'
-                    in_olist = True
-                    html += '\n'
-                in_list = True
-                html += '\t'
-                html += '<li>'
+                if not element.in_tag('ol'):
+                    element = root_element.add_child('ol')
+                    tab_element = element.add_child('text')
+                    tab_element.text += '\t'
+                    element = element.add_child('li')
+                else:
+                    tab_element = element.parent.add_child('text')
+                    tab_element.text += '\n\t'
+                    element = element.parent.add_child('li')
             elif peek() == '-':
                 consume_specific('-')
                 consume_specific(' ')
-                if not in_ulist:
-                    html += '<ul>'
-                    in_ulist = True
-                    html += '\n'
-                in_list = True
-                html += '\t'
-                html += '<li>'
-            elif not in_para:
-                in_para = True
-                html += '<p>'
+                if not element.in_tag('ul'):
+                    element = root_element.add_child('ul')
+                    tab_element = element.add_child('text')
+                    tab_element.text += '\t'
+                    element = element.add_child('li')
+                else:
+                    tab_element = element.parent.add_child('text')
+                    tab_element.text += '\n\t'
+                    element = element.parent.add_child('li')
+            elif not element.is_tag('p') or newpara:
+                element = root_element.add_child('p')
+            else:
+                tab_element = element.add_child('text')
+                tab_element.text += '\n\t'
+
+            child_element = element.add_child('text')
 
             while peek() != '\n':
                 if peek() == ' ' and peek(1) == ' ':
                     consume_specific(' ')
                     consume_specific(' ')
-                    html += '<br />'
+                    element.add_child('br')
+                    child_element = child_element.parent.add_child('text')
                     continue
 
                 if peek() == '*':
                     if peek(1) == '*':
                         consume_specific('*')
                         consume_specific('*')
-                        in_bold = not in_bold
-                        html += '<strong>' if in_bold else '</strong>'
+                        open_or_close_tag('strong')
                     else:
                         consume_specific('*')
-                        in_italic = not in_italic
-                        html += '<em>' if in_italic else '</em>'
+                        open_or_close_tag('em')
                     continue
 
                 if peek() == '`':
                     consume_specific('`')
-                    in_code = not in_code
-                    html += '<code>' if in_code else '</code>'
+                    open_or_close_tag('code')
                     continue
 
                 if peek() == '~':
                     consume_specific('~')
-                    in_strike = not in_strike
-                    html += '<s>' if in_strike else '</s>'
+                    open_or_close_tag('strikethrough')
                     continue
 
-                html += consume_one()
+                child_element.text += consume_one()
 
-            if heading > 0:
-                html += '</h{}>'.format(heading)
-                html += consume_specific('\n')
-            elif in_list:
-                html += '</li>'
-                html += consume_specific('\n')
-                in_list = False
-                if in_olist:
-                    if not (peek() and peek().isdigit() and peek(1) == '.' and peek(2) == ' ') and not (peek() == '\n' and peek(1) and peek(1).isdigit() and peek(2) == '.' and peek(3) == ' '):
-                        html += '</ol>'
-                        html += '\n'
-                        in_olist = False
-                if in_ulist:
-                    if not (peek() == '-' and peek(1) == ' '):
-                        html += '</ul>'
-                        html += '\n'
-                        in_ulist = False
-            elif peek(1) == '\n':
-                html += '</p>'
-                in_para = False
-                html += consume_specific('\n')
-            else:
-                html += consume_specific('\n')
-                html += '\t'
+            consume_specific('\n')
 
-        return html
+        return str(root_element)
 
 
 if __name__ == '__main__':
