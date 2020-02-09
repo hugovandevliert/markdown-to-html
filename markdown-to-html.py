@@ -29,7 +29,7 @@ def main():
         with open(outputfile, 'w') as file:
             markdown = file.write(html)
     except:
-        sys.exit('Could write to file: ' + inputfile)
+        sys.exit('Could not write to file: ' + outputfile)
 
 
 class HtmlElement:
