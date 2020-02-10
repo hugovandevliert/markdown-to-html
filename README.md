@@ -11,8 +11,8 @@ Currently, the following Markdown syntax is supported:
 - [x] Italic text `*`
 - [x] Strikethrough `~`
 - [ ] Blockquote `>`
-- [ ] Ordered list
-- [ ] Unordered list
+- [x] Ordered list
+- [x] Unordered list
 - [x] Code inline ``` ` ```
 - [ ] Code block ` ``` `
 - [x] Horizontal rule `---`
