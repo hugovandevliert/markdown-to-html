@@ -6,7 +6,7 @@ A Markdown to HTML converter written in Python.
 
 Currently, the following Markdown syntax is supported:
 
-- [x] Heading `#`, `##`, `###`
+- [x] Heading `#`, `##`, `###`, `####`, `#####`, `######`
 - [x] Bold text `**`
 - [x] Italic text `*`
 - [x] Strikethrough `~`

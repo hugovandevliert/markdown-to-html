@@ -39,6 +39,9 @@ class HtmlElement:
         'h1': '<h1{}>{}</h1>',
         'h2': '<h2{}>{}</h2>',
         'h3': '<h3{}>{}</h3>',
+        'h4': '<h4{}>{}</h4>',
+        'h5': '<h5{}>{}</h5>',
+        'h6': '<h6{}>{}</h6>',
         'p': '<p{}>{}</p>',
         'strong': '<strong{}>{}</strong>',
         'code': '<code{}>{}</code>',
@@ -152,7 +155,7 @@ class MarkdownParser:
 
             heading = 0
             if peek() == '#':
-                while peek() == '#' and heading <= 3:
+                while peek() == '#' and heading <= 6:
                     consume_specific('#')
                     heading += 1
                 consume_specific(' ')
