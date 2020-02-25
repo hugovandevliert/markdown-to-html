@@ -51,7 +51,8 @@ class HtmlElement:
         'hr': '<hr{} />',
         'ul': '<ul{}>\n{}\n</ul>',
         'ol': '<ol{}>\n{}\n</ol>',
-        'li': '<li{}>{}</li>'
+        'li': '<li{}>{}</li>',
+        'blockquote': '<blockquote{}>{}</blockquote>'
     }
 
     def __init__(self, tag):
@@ -200,6 +201,13 @@ class MarkdownParser:
                     tab_element = element.parent.add_child('text')
                     tab_element.text += '\n\t'
                     element = element.parent.add_child('li')
+            elif peek() == '>':
+                consume_specific('>')
+                if peek() == ' ':
+                    consume_specific(' ')
+                tab_element = element.parent.add_child('text')
+                tab_element.text += '\n\t'
+                element = element.parent.add_child('blockquote')
             elif not element.is_tag('p') or newpara:
                 element = root_element.add_child('p')
             else:

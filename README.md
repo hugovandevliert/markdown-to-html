@@ -10,7 +10,7 @@ Currently, the following Markdown syntax is supported:
 - [x] Bold text `**`
 - [x] Italic text `*`
 - [x] Strikethrough `~`
-- [ ] Blockquote `>`
+- [x] Blockquote `>`
 - [x] Ordered list
 - [x] Unordered list
 - [x] Code inline ``` ` ```
