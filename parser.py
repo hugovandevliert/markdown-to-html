@@ -1,3 +1,6 @@
+import sys
+
+
 class HtmlElement:
     tags = {
         'root': None,
